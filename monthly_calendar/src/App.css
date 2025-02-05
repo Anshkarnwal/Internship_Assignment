@@ -1,0 +1,68 @@
+.calendar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 20px;
+}
+
+.days-of-week, .days-in-month {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+}
+
+.day-header, .day {
+  padding: 10px;
+  border: 1px solid #ccc;
+  text-align: center;
+}
+
+.day-header {
+  font-weight: bold;
+  background-color: #f0f0f0;
+}
+/* App.css */
+.container {
+  font-family: Arial, sans-serif;
+  max-width: 800px;
+  margin: 20px;
+  padding: 15px;
+}
+
+.month-header {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 15px;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  margin-bottom: 25px;
+}
+
+.calendar-day {
+  padding: 4px;
+  font-size: 14px;
+}
+
+.resources-section {
+  border-top: 1px solid #ccc;
+  padding-top: 15px;
+}
+
+.resource-item {
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.resource-item:last-child {
+  border-bottom: none;
+}
+
+.resource-name {
+  font-weight: bold;
+  margin-bottom: 4px;
+}
