@@ -118,7 +118,6 @@ const InlineEditing = () => {
         </ResourcesDirective>
 
         <ViewsDirective>
-          <ViewDirective option="TimelineWeek" />
           <ViewDirective option="TimelineMonth" />
         </ViewsDirective>
 
