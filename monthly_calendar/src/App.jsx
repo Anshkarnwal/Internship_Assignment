@@ -1,111 +1,131 @@
-import { useState, useEffect } from "react";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
-import { DndProvider, useDrag, useDrop } from "react-dnd";
-import { HTML5Backend } from "react-dnd-html5-backend";
-import PropTypes from 'prop-types';
+import { useState, useEffect, useRef } from "react";
+import {
+  ScheduleComponent,
+  TimelineViews,
+  TimelineMonth,
+  Inject,
+  ResourcesDirective,
+  ResourceDirective,
+  ViewsDirective,
+  ViewDirective,
+  DragAndDrop,
+  Resize,
+} from "@syncfusion/ej2-react-schedule";
 
-const Calendar = () => {
-  const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [events, setEvents] = useState(() => {
-    const savedEvents = localStorage.getItem("calendarEvents");
-    return savedEvents ? JSON.parse(savedEvents) : [];
-  });
-  
-  DayCell.propTypes = {
-    day: PropTypes.instanceOf(Date).isRequired,
-    addEvent: PropTypes.func.isRequired,
-    events: PropTypes.arrayOf(
-      PropTypes.shape({
-        id: PropTypes.number.isRequired,
-        date: PropTypes.string.isRequired,
-        color: PropTypes.string.isRequired,
-      })
-    ),
-    moveEvent: PropTypes.func.isRequired,
+const generateResourceData = (startChar, endChar) => {
+  const colors = [
+    "#df5286", "#7fa900", "#ea7a57", "#5978ee", "#ff5733", "#33ff57",
+    "#5733ff", "#ff33a1", "#33a1ff", "#a1ff33", "#ffa500", "#800080",
+    "#008080", "#ff4500", "#4682b4"
+  ];
+  let resources = [];
+  for (let i = startChar.charCodeAt(0), j = 0; i <= endChar.charCodeAt(0); i++, j++) {
+    resources.push({
+      id: i - 64,
+      text: `Resource ${String.fromCharCode(i)}`,
+      color: colors[j % colors.length],
+    });
+  }
+  return resources;
+};
+
+const resourceDataSource = generateResourceData("A", "O");
+
+const InlineEditing = () => {
+  const scheduleRef = useRef(null);
+  const [data, setData] = useState([
+    { Id: 1, Subject: "Task 1", StartTime: new Date(2025, 1, 4, 10, 0), EndTime: new Date(2025, 1, 4, 17, 0), TaskId: 1 },
+    { Id: 2, Subject: "Task 2", StartTime: new Date(2025, 1, 5, 12, 0), EndTime: new Date(2025, 1, 5, 13, 0), TaskId: 5 },
+    { Id: 3, Subject: "Task 3", StartTime: new Date(2025, 1, 6, 14, 0), EndTime: new Date(2025, 1, 6, 15, 0), TaskId: 10 },
+    { Id: 4, Subject: "Task 4", StartTime: new Date(2025, 1, 7, 16, 0), EndTime: new Date(2025, 1, 7, 17, 0), TaskId: 15 },
+  ]);
+  const [selectedEventId, setSelectedEventId] = useState(null);
+
+  const onDeleteEvent = () => {
+    if (selectedEventId !== null) {
+      const eventToDelete = data.find(event => event.Id === selectedEventId);
+      if (eventToDelete) {
+        const confirmDelete = window.confirm(`Are you sure you want to delete "${eventToDelete.Subject}"?`);
+        if (confirmDelete) {
+          setData((prevData) => prevData.filter((event) => event.Id !== selectedEventId));
+          setSelectedEventId(null);
+        }
+      }
+    }
   };
-  
-  Event.propTypes = { 
-    event: PropTypes.shape({
-      id: PropTypes.number.isRequired,
-      date: PropTypes.string.isRequired,
-      color: PropTypes.string.isRequired,
-    }).isRequired,
-  };
+
+  const eventTemplate = (props) => (
+    <div
+      style={{
+        backgroundColor: resourceDataSource.find(res => res.id === props.TaskId)?.color || "#ccc",
+        padding: "1px",
+        borderRadius: "4px",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
+        textAlign: "center",
+        minHeight: "50px",
+        cursor: "pointer",
+        outline: selectedEventId === props.Id ? "2px solid red" : "none",
+      }}
+      onClick={() => setSelectedEventId(props.Id)}
+    >
+      <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+        {props.Subject}
+      </span>
+    </div>
+  );
 
   useEffect(() => {
-    localStorage.setItem("calendarEvents", JSON.stringify(events));
-  }, [events]);
-
-  const daysInMonth = eachDayOfInterval({
-    start: startOfMonth(currentMonth),
-    end: endOfMonth(currentMonth),
-  });
-
-  const addEvent = (day) => {
-    const newEvent = {
-      id: Date.now(),
-      date: format(day, "yyyy-MM-dd"),
-      color: `hsl(${Math.random() * 360}, 100%, 75%)`,
+    const handleKeyDown = (event) => {
+      if (event.key === "Delete" || event.key === "Backspace") {
+        onDeleteEvent();
+      }
     };
-    setEvents([...events, newEvent]);
-  };
 
-  const moveEvent = (id, newDate) => {
-    setEvents(events.map((e) => (e.id === id ? { ...e, date: newDate } : e)));
-  };
-
-  return (
-    <DndProvider backend={HTML5Backend}>
-      <div className="calendar">
-        <div className="toolbar">
-          <button onClick={() => setCurrentMonth(new Date(currentMonth.setMonth(currentMonth.getMonth() - 1)))}>
-            Previous
-          </button>
-          <h2>{format(currentMonth, "MMMM yyyy")}</h2>
-          <button onClick={() => setCurrentMonth(new Date(currentMonth.setMonth(currentMonth.getMonth() + 1)))}>
-            Next
-          </button>
-        </div>
-        <div className="grid">
-          {daysInMonth.map((day) => (
-            <DayCell key={day} day={day} addEvent={addEvent} events={events} moveEvent={moveEvent} />
-          ))}
-        </div>
-      </div>
-    </DndProvider>
-  );
-};
-
-const DayCell = ({ day, addEvent, events = [], moveEvent }) => {
-  const [, drop] = useDrop({
-    accept: "event",
-    drop: (item) => moveEvent(item.id, format(day, "yyyy-MM-dd")),
-  });
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [selectedEventId, data]);
 
   return (
-    <div ref={drop} className="day-cell" onDoubleClick={() => addEvent(day)}>
-      <span className={format(day, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd") ? "highlight" : ""}>
-        {format(day, "d")}
-      </span>
-      {(events || []).filter((e) => e.date === format(day, "yyyy-MM-dd")).map((event) => (
-        <Event key={event.id} event={event} />
-      ))}
+    <div style={{ width: "100vw", height: "100vh", display: "flex" }}>
+      <ScheduleComponent
+        width="100%"
+        height="100%"
+        ref={scheduleRef}
+        cssClass="inline-edit"
+        workDays={[0, 1, 2, 3, 4, 5]}
+        currentView="TimelineMonth"
+        allowInline
+        selectedDate={new Date(2025, 1, 4)}
+        eventSettings={{ dataSource: data, template: eventTemplate }}
+        group={{ resources: ["Categories"] }}
+      >
+        <ResourcesDirective>
+          <ResourceDirective
+            field="TaskId"
+            title="Category"
+            name="Categories"
+            allowMultiple={true}
+            dataSource={resourceDataSource}
+            textField="text"
+            idField="id"
+            colorField="color"
+          />
+        </ResourcesDirective>
+
+        <ViewsDirective>
+          <ViewDirective option="TimelineWeek" />
+          <ViewDirective option="TimelineMonth" />
+        </ViewsDirective>
+
+        <Inject services={[TimelineViews, TimelineMonth, DragAndDrop, Resize]} />
+      </ScheduleComponent>
     </div>
   );
 };
 
-const Event = ({ event }) => {
-  const [{ isDragging }, drag] = useDrag({
-    type: "event",
-    item: { id: event.id },
-    collect: (monitor) => ({ isDragging: !!monitor.isDragging() }),
-  });
-
-  return (
-    <div ref={drag} className="event" style={{ backgroundColor: event?.color || "gray", opacity: isDragging ? 0.5 : 1 }}>
-      Event
-    </div>
-  );
-};
-
-export default Calendar;
+export default InlineEditing;
